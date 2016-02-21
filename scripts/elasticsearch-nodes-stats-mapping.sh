@@ -7,7 +7,7 @@
 # - fields called '*timestamp' are indexed as dates
 # - string fields are not analyzed
 
-curl -XPUT 'http://localhost:9200/nodes_stats' -d '
+curl -XPUT 'http://'$HOSTNAME':9200/nodes_stats' -d '
 {
     "settings" : {
         "number_of_shards" : 1,
