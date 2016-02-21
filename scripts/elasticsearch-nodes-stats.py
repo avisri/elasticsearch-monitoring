@@ -16,20 +16,33 @@ import requests
 # - use fixed/predefined node names, otherwise any restart will generate new names
 #   and the data for a single node will be indexed under different types  
 import socket
+import time
 hostname=socket.gethostname() 
-stats = requests.get('http://'+hostname+':9200/_nodes/stats?all').json()
 
-if (stats is not None):
-	nodes_data = stats['nodes']
-	if (nodes_data is not None):
-		bulk_data = ''
-		for node_id in nodes_data:
-			node_data = nodes_data[node_id]
-			node_name = node_data['name']
-			if (node_name is not None and node_data is not None):
-				bulk_data += '{"index": {"_index": "nodes_stats", "_type": "' + node_name + '"}}\n'
-				bulk_data += json.dumps(node_data) + '\n'
-		if (bulk_data != ''):
-			#response = requests.post('http://localhost:9200/_bulk', data=bulk_data)
-			print response;
+import logging
+logging.basicConfig(level=logging.INFO, 
+                    format='%(asctime)s %(message)s') # include timestamp
+"""
+logging.basicConfig(level=logging.INFO, 
+                    filename='myserver.log', # log to this file
+                    format='%(asctime)s %(message)s') # include timestamp
+"""
+s = requests.Session()
+while True:
+	stats = s.get('http://'+hostname+':9200/_nodes/stats?all').json()
+	if (stats is not None):
+		nodes_data = stats['nodes']
+		if (nodes_data is not None):
+			bulk_data = ''
+			for node_id in nodes_data:
+				node_data = nodes_data[node_id]
+				node_name = node_data['name']
+				if (node_name is not None and node_data is not None):
+					bulk_data += '{"index": {"_index": "nodes_stats", "_type": "' + node_name + '"}}\n'
+					bulk_data += json.dumps(node_data) + '\n'
+			if (bulk_data != ''):
+				response = s.post('http://'+hostname+':9200/_bulk', data=bulk_data)
+				logging.debug ('Data : %s \n' , bulk_data )
+				logging.info  ('Submitted : %d bytes  to ES ' ,len(bulk_data))
+	time.sleep(5)
 
